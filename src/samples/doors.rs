@@ -1,4 +1,9 @@
-use futures::TryStreamExt;
+use std::sync::Arc;
+use axum::extract::State;
+use axum::http::StatusCode;
+use axum::Json;
+use axum::response::IntoResponse;
+
 use serde::{Serialize, Deserialize};
 use sqlx::{PgPool, Row};
 
@@ -7,16 +12,27 @@ pub struct Door {
     pub isbn: String,
     pub name: String,
     pub description: String,
-    pub price: f64
 }
 
+pub async fn get_doors () -> impl IntoResponse {
+    let query = "SELECT isbn, name, description FROM doors";
+    let result = sqlx::query(query);
+
+    let one = Door {
+        isbn: "local".to_string(),
+        name: "local".to_string(),
+        description: "local".to_string()
+    };
+    // let response = vec![one];
+    // Json(response)
+    (StatusCode::NOT_FOUND, format!("Actually we found {}", one.isbn))
+}
 pub async fn create_door (door: &Door, pool: &PgPool) -> Result<(), Box<dyn std::error::Error>> {
-    let query = "INSERT INTO door (isbn, name, description, price) VALUES ($1, $2, $3, $4);";
+    let query = "INSERT INTO doors (isbn, name, description) VALUES ($1, $2, $3);";
     sqlx::query(query)
         .bind(&door.isbn)
         .bind(&door.name)
         .bind(&door.description)
-        .bind(&door.price)
         .execute(pool)
         .await
         .expect("::Error::Failed to create DOOR::");
@@ -26,7 +42,6 @@ pub async fn update_door (door: &Door, isbn: &str, pool: &PgPool) -> Result<(), 
     let query = "UPDATE door SET name = $1, price = $2, description = $3 WHERE isbn = $4";
     sqlx::query(query)
         .bind(&door.name)
-        .bind(&door.price)
         .bind(&door.description)
         .bind(&door.isbn)
         .execute(pool)
@@ -94,7 +109,6 @@ pub async fn read_isbn (pool: &PgPool) -> Result<Door, Box<dyn std::error::Error
         isbn: row.get("isbn"),
         name: row.get("name"),
         description: row.get("description"),
-        price: 00.00
     };
     Ok(result)
 }
