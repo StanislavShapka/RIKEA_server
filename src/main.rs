@@ -1,5 +1,5 @@
 use axum::{Extension, Router};
-use axum::routing::get;
+use axum::routing::{get, post};
 use dotenv::dotenv;
 use serde::{Deserialize, Serialize};
 use sqlx::postgres::PgPoolOptions;
@@ -31,8 +31,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .allow_headers(Any);
 
     let app = Router::new()
-        .route("/doors", get(samples::door::get_doors))
-        // .layer(Extension())
+        // .route("/doors", get(samples::door::get_doors).post(samples::door::create_door))
+        // .route("/windows", post(samples::windows::create_window).get(samples::windows::get_windows))
+        .route("/custom", get(samples::types::get_call).post(samples::types::post_call).delete(samples::types::delete_call))
+        .layer(Extension(pool.clone()))
         .layer(cors);
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:4000").await.unwrap();
