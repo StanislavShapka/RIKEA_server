@@ -1,19 +1,23 @@
-use axum::{Router};
+use axum::{Extension, Router};
 use axum::routing::get;
+use dotenv::dotenv;
 use serde::{Deserialize, Serialize};
 use sqlx::postgres::PgPoolOptions;
 use tower_http::cors::{AllowOrigin, Any, CorsLayer};
-use crate::samples::doors::get_doors;
+// use crate::samples::doors::get_doors;
 
-pub mod samples;
+mod samples;
+mod config;
+mod customerror;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-
-    let db_url = "postgres://postgres:123@localhost:5432/store";
+    dotenv().ok();
+    let config = config::Config::new();
+    // let db_url = "postgres://postgres:123@localhost:5432/store";
     let pool = PgPoolOptions::new()
         .max_connections(5)
-        .connect(&db_url)
+        .connect(&config.database_url)
         .await
         .expect("Error building a connection pool");
 
@@ -27,7 +31,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .allow_headers(Any);
 
     let app = Router::new()
-        .route("/doors", get(get_doors))
+        .route("/doors", get(samples::door::get_doors))
+        // .layer(Extension())
         .layer(cors);
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:4000").await.unwrap();
